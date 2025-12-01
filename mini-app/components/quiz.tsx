@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import ScoreTable from "@/components/score-table";
 
 type Option = {
   label: string;
@@ -151,12 +152,17 @@ export default function Quiz() {
   const [current, setCurrent] = useState(0);
   const [selected, setSelected] = useState<string | null>(null);
   const [answered, setAnswered] = useState(false);
+  const [score, setScore] = useState(0);
+  const [finished, setFinished] = useState(false);
 
   const q = questions[current];
 
   const handleClick = (value: string) => {
     setSelected(value);
     setAnswered(true);
+    if (value === q.correct) {
+      setScore((prev) => prev + 1);
+    }
   };
 
   const nextQuestion = () => {
@@ -169,38 +175,76 @@ export default function Quiz() {
     setCurrent(0);
     setSelected(null);
     setAnswered(false);
+    setScore(0);
+    setFinished(false);
   };
 
   return (
     <div className="flex flex-col items-center gap-4">
-      <h2 className="text-xl font-semibold">{q.text}</h2>
-      <div className="flex flex-col gap-2">
-        {q.options.map((opt) => (
-          <Button
-            key={opt.value}
-            variant="outline"
-            onClick={() => handleClick(opt.value)}
-            disabled={answered}
-          >
-            {opt.label}
-          </Button>
-        ))}
-      </div>
-      {answered && (
-        <div className="flex flex-col items-center gap-2">
-          {selected === q.correct ? (
-            <p className="text-green-600 font-medium">Correct!</p>
-          ) : (
-            <p className="text-red-600 font-medium">
-              Incorrect. The correct answer is {q.correct}.
-            </p>
+      {finished ? (
+        <ScoreTable
+          score={score}
+          total={questions.length}
+          level={Math.floor(current / 5) + 1}
+        />
+      ) : (
+        <>
+          {!finished && (
+            <img
+              src={`/level${Math.floor(current / 5) + 1}.png`}
+              alt={`Level ${Math.floor(current / 5) + 1}`}
+              className="w-32 h-32 mb-4"
+            />
           )}
-          {current < questions.length - 1 ? (
-            <Button onClick={nextQuestion}>Next</Button>
-          ) : (
-            <Button onClick={resetQuiz}>Restart</Button>
+          <h2 className="text-xl font-semibold">{q.text}</h2>
+          <div className="flex flex-col gap-2">
+            {q.options.map((opt) => (
+              <Button
+                key={opt.value}
+                variant="outline"
+                onClick={() => handleClick(opt.value)}
+                disabled={answered}
+              >
+                {opt.label}
+              </Button>
+            ))}
+          </div>
+          {current > 0 && (
+            <Button
+              variant="outline"
+              onClick={() => {
+                setCurrent((prev) => prev - 1);
+                setSelected(null);
+                setAnswered(false);
+              }}
+            >
+              Back
+            </Button>
           )}
-        </div>
+          {answered && (
+            <div className="flex flex-col items-center gap-2">
+              {selected === q.correct ? (
+                <p className="text-green-600 font-medium">Correct!</p>
+              ) : (
+                <p className="text-red-600 font-medium">
+                  Incorrect. The correct answer is {q.correct}.
+                </p>
+              )}
+              {current < questions.length - 1 ? (
+                <Button onClick={nextQuestion}>Next</Button>
+              ) : (
+                <Button
+                  onClick={() => {
+                    setFinished(true);
+                  }}
+                >
+                  Finish
+                </Button>
+              )}
+            </div>
+          )}
+          <Button onClick={resetQuiz}>Restart</Button>
+        </>
       )}
     </div>
   );
